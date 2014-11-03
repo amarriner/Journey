@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Script that generates a novel (!)"""
 
-from pattern.en import numerals
+from pattern.en import numerals, pluralize, singularize
 
+import json
 import logging, logging.handlers
 import random
 import re
@@ -24,6 +25,34 @@ class Journey:
    DIR_STRINGS = {'n': 'north', 's': 'south', 'e': 'east', 'w': 'west'}
 
    FOUND_EXIT = False
+
+   JSON = {}
+
+   # -------------------------------------------------------------------------------------------------------------
+   def __init__(self):
+      """Constructor"""
+
+      self.load_json()
+
+   # -------------------------------------------------------------------------------------------------------------
+   def load_json(self):
+      """Pulls various corpora and loads them into the JSON object"""
+
+      f = open('corpora/data/flowers/flowers.json')
+      self.JSON['flowers'] = json.loads(f.read().lower())['flowers']
+      f.close()
+
+      f = open('corpora/data/animals/common.json')
+      self.JSON['animals'] = json.loads(f.read().lower())
+      f.close()
+
+      f = open('corpora/data/colors/crayola.json')
+      self.JSON['colors'] = json.loads(f.read().lower())['colors']
+      f.close()
+
+      f = open('corpora/data/foods/fruits.json')
+      self.JSON['fruits'] = json.loads(f.read().lower())['fruits']
+      f.close()
 
    # -------------------------------------------------------------------------------------------------------------
    def init_maze(self):
@@ -195,7 +224,16 @@ class Journey:
                stack = []
 
             else:
-               self.TEMP += "Then I went " + self.DIR_STRINGS[self.OPPOSITE[next[2]]] + ". "
+               if self.TEMP:
+                  self.TEMP += "Then I went " + self.DIR_STRINGS[self.OPPOSITE[next[2]]] + ". "
+               else:
+                  self.TEMP += "I went " + self.DIR_STRINGS[self.OPPOSITE[next[2]]] + ". "
+
+               # Is there a flower here?
+               if random.randrange(100) < 3:
+                  self.TEMP += "There was a beautiful " + random.choice(self.JSON['colors'])['color'] + " "
+                  self.TEMP += singularize(random.choice(self.JSON['flowers'])) + " there. "
+                  self.TEMP += "It smelled like " + pluralize(random.choice(self.JSON['fruits'])) + ". "
 
                self.MAZE[i][j]['v'] = 1
                self.MAZE[i][j][next[2]] = 1
@@ -207,7 +245,7 @@ class Journey:
          # unvisited neighbors
          else:
             if random.randrange(100) < 5:
-               self.TEMP += "\n\nThen I hit a dead-end. I was feeling lost.\n\n"
+               self.TEMP += "Then I hit a dead-end. I was feeling lost so I retraced \n\n"
 
             square = stack.pop()
 
