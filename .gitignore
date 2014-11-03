@@ -2,3 +2,4 @@ __pycache__
 *.pyc
 keys.*
 *.log*
+corpora
