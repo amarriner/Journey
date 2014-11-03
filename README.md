@@ -9,6 +9,8 @@ see along the way.
 The script generates the requisite number of words right now, but it's (obviously) pretty repetative. I'm working on making it *slightly* more natural as well as adding more 
 optional and random encounters/happenings. As well as, perhaps, more complex events occurring in a single square of a given floor.
 
+[My NaNoGenMo-2014 Issue](https://github.com/dariusk/NaNoGenMo-2014/issues/22)
+
 **Dependencies and Tools**
  * [corpora](https://github.com/dariusk/corpora)
  * [pattern.en](http://www.clips.ua.ac.be/pages/pattern-en)
