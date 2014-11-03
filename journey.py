@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Script that generates a novel (!)"""
 
-from pattern.en import numerals, pluralize, singularize
+from pattern.en import numerals, pluralize, referenced, singularize
 
 import json
 import logging, logging.handlers
@@ -21,12 +21,15 @@ class Journey:
    MAZE_SIZE = 25
    MAZE_EXIT = {}
 
+   DIR_INDEX   = 0
+   DIR_STRINGS = {'n': ['north', 'up'], 's': ['south', 'down'], 'e': ['east', 'right'], 'w': ['west', 'left']}
    OPPOSITE    = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
-   DIR_STRINGS = {'n': 'north', 's': 'south', 'e': 'east', 'w': 'west'}
 
    FOUND_EXIT = False
 
    JSON = {}
+
+   WALK = ['walked', 'went', 'strode', 'ran', 'sprinted', 'hoofed it', 'beat cheeks', 'trekked', 'meandered', 'marched', 'shuffled', 'shambled', 'toddled', 'traipsed', 'plodded', 'strutted', 'trudged', 'paraded', 'hiked', 'ambled', 'sauntered', 'stepped']
 
    # -------------------------------------------------------------------------------------------------------------
    def __init__(self):
@@ -43,7 +46,7 @@ class Journey:
       f.close()
 
       f = open('corpora/data/animals/common.json')
-      self.JSON['animals'] = json.loads(f.read().lower())
+      self.JSON['animals'] = json.loads(f.read().lower())['animals']
       f.close()
 
       f = open('corpora/data/colors/crayola.json')
@@ -54,12 +57,18 @@ class Journey:
       self.JSON['fruits'] = json.loads(f.read().lower())['fruits']
       f.close()
 
+      f = open('corpora/data/humans/firstNames.json')
+      self.JSON['names'] = json.loads(f.read())['firstNames']
+      f.close()
+
    # -------------------------------------------------------------------------------------------------------------
    def init_maze(self):
       """Initializes the maze object"""
 
       self.MAZE = []
       self.TEMP = ''
+
+      self.DIR_INDEX = random.randrange(2)
 
       for i in range(0, self.MAZE_SIZE):
          self.MAZE.append([])
@@ -193,7 +202,10 @@ class Journey:
       square = stack[0]
       logging.info('Starting maze at (' + str(i) + ',' + str(j) + ')')
 
+      then = False
+
       total = 0
+      last_dir = ''
       # Run through the maze 
       while (len(stack)):
 
@@ -213,9 +225,9 @@ class Journey:
             if self.MAZE_EXIT['i'] == i and self.MAZE_EXIT['j'] == j:
                self.CHAPTER += 1
                
-               self.TEXT += "CHAPTER " + numerals(str(self.CHAPTER)).upper() + "\n"
+               self.TEXT += "~~~ CHAPTER " + numerals(str(self.CHAPTER)).upper() + " ~~~\n"
                self.TEXT += self.TEMP
-               self.TEXT += "Then I went down a flight of stairs.\n\n"
+               self.TEXT += "Then I " + random.choice(self.WALK) + " down a flight of stairs.\n"
 
                self.FOUND_EXIT = True
 
@@ -224,16 +236,23 @@ class Journey:
                stack = []
 
             else:
-               if self.TEMP:
-                  self.TEMP += "Then I went " + self.DIR_STRINGS[self.OPPOSITE[next[2]]] + ". "
+               if last_dir == self.OPPOSITE[next[2]] and then:
+                  self.TEMP += "Again I " + random.choice(self.WALK) + " " + self.DIR_STRINGS[self.OPPOSITE[next[2]]][self.DIR_INDEX] + ". "
+               elif then:
+                  self.TEMP += "Then I " + random.choice(self.WALK) + " " + self.DIR_STRINGS[self.OPPOSITE[next[2]]][self.DIR_INDEX] + ". "
                else:
-                  self.TEMP += "I went " + self.DIR_STRINGS[self.OPPOSITE[next[2]]] + ". "
+                  self.TEMP += "I " + random.choice(self.WALK) + " " + self.DIR_STRINGS[self.OPPOSITE[next[2]]][self.DIR_INDEX] + ". "
+                  then = True
 
                # Is there a flower here?
-               if random.randrange(100) < 3:
+               if random.randrange(100) < 5:
                   self.TEMP += "There was a beautiful " + random.choice(self.JSON['colors'])['color'] + " "
                   self.TEMP += singularize(random.choice(self.JSON['flowers'])) + " there. "
-                  self.TEMP += "It smelled like " + pluralize(random.choice(self.JSON['fruits'])) + ". "
+                  self.TEMP += "It smelled like " + pluralize(random.choice(self.JSON['fruits'])) + ".\n"
+               # Or is there an animal here?
+               elif random.randrange(100) < 5:
+                  self.TEMP += "There was " + referenced(random.choice(self.JSON['animals'])) + " there. "
+                  self.TEMP += "I named it " + random.choice(self.JSON['names']) + ".\n"
 
                self.MAZE[i][j]['v'] = 1
                self.MAZE[i][j][next[2]] = 1
@@ -241,11 +260,14 @@ class Journey:
                stack.append({'i': i, 'j': j})
                total += 1
 
+               last_dir = self.OPPOSITE[next[2]]
+
          # Or if there are no valid directions, step back through the path to get to a square with
          # unvisited neighbors
          else:
             if random.randrange(100) < 5:
-               self.TEMP += "Then I hit a dead-end. I was feeling lost so I retraced \n\n"
+               self.TEMP += "Then I hit a dead-end. I was feeling lost so I retraced my steps.\n"
+               then = False
 
             square = stack.pop()
 
@@ -266,17 +288,30 @@ class Journey:
          if len(line) > 80:
 
             count = 0
-            for c in line:
-               text += c
+            space = 0
+            start = 0
+            for i in range(len(line)):
+               c = line[i]
+
+               if c == ' ': 
+                  space = i
 
                if count >= 80:
+                  text += line[start:space].strip() + "\n"
+                  start = space
+                  i = space
                   count = 0
-                  text += "\n"
 
-               count += 1
+               else:
+                  count += 1
+
+            text += line[start:].strip() + "\n\n"
 
          else:
             text += line + "\n\n"
+
+      text  = "~~~ FORWARD ~~~\n\nI am an adventurer. I came to this complex of mazes to seek glory.\nWhat follows is the journal of my travails.\n\n" + text.strip()
+      text += "\n\n~~~ AFTERWARD ~~~\n\nI sought glory, and I found it at the bottom of this massive place.\n\nTHE END\n"
 
       f = open('journey.txt', 'w')
       f.write(text)
@@ -301,7 +336,7 @@ def main():
    # Instantiate main object and begin
    j = Journey()
 
-   while j.count_words() < 10000:
+   while j.count_words() < 50000:
       j.build_maze()
       j.traverse_maze()
 
