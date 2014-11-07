@@ -5,9 +5,13 @@ from pattern.en import numerals, pluralize, referenced, singularize
 
 import json
 import logging, logging.handlers
+import os
 import random
 import re
+import requests
 import sys
+
+CONCEPTNET_URL = "http://conceptnet5.media.mit.edu/data/5.2/c/en/"
 
 class Journey:
    """Class that does all the heavy lifting"""
@@ -39,7 +43,10 @@ class Journey:
    TEMP_FLOWERS = []
 
    ANIMALS = []
+   CONVOS = {}
    TEMP_ANIMALS = []
+   TEMP_CONVOS = {}
+   ANIMAL_CONCEPTS = {}
 
    # -------------------------------------------------------------------------------------------------------------
    def __init__(self):
@@ -70,6 +77,11 @@ class Journey:
       f = open('corpora/data/humans/firstNames.json')
       self.JSON['names'] = json.loads(f.read())['firstNames']
       f.close()
+
+      if os.path.exists('concepts.json'):
+         f = open('concepts.json')
+         self.ANIMAL_CONCEPTS = json.loads(f.read())
+         f.close()
 
    # -------------------------------------------------------------------------------------------------------------
    def init_maze(self):
@@ -208,6 +220,7 @@ class Journey:
       self.TEMP = ''
       self.TEMP_FLOWERS = []
       self.TEMP_ANIMALS = []
+      self.TEMP_CONVOS = self.CONVOS
 
       # Pick a start point at random
       i = random.randrange(self.MAZE_SIZE)
@@ -245,6 +258,12 @@ class Journey:
 
                self.FLOWERS += self.TEMP_FLOWERS
                self.ANIMALS += self.TEMP_ANIMALS
+               
+               for c in self.TEMP_CONVOS:
+                  if c not in self.CONVOS.keys():
+                     self.CONVOS[c] = []
+
+                  self.CONVOS[c].append(self.TEMP_CONVOS[c])
 
                # Check to see if any animals stopped following the narrator
                self.TEXT += self.unfollow()
@@ -308,7 +327,7 @@ class Journey:
                         self.TEMP += " and added it to the rest of my bouquet"
                      self.TEMP += "."
 
-                     self.TEMP_FLOWERS.append(referenced(color + " " + flower))
+                     self.TEMP_FLOWERS.append({'color': color, 'flower': flower})
 
                   # Does the narrator eat this flower instead?
                   elif random.randrange(100) < 5:
@@ -327,12 +346,88 @@ class Journey:
 
                   # Did the animal follow the narrator?
                   if random.randrange(100) < 10:
-                     self.TEMP_ANIMALS.append(name + " the " + animal)
+                     self.TEMP_ANIMALS.append({'name': name, 'animal': animal})
+
+                     self.get_animal_concepts(animal)
+
                      self.TEMP += " It started following me."
 
                   self.TEMP += "\n"
 
                   then = False
+
+               # Or are two animals talking to each other?
+               elif random.randrange(100) < 1 and len(self.ANIMALS) + len(self.TEMP_ANIMALS) > 1:
+                  all_animals = self.ANIMALS + self.TEMP_ANIMALS
+                  convos = self.TEMP_CONVOS
+
+                  to = random.choice(all_animals)
+                  fro = random.choice(all_animals)
+                  while fro == to:
+                     fro = random.choice(all_animals)
+
+                  already = False
+                  if to['name']+to['animal'] in convos.keys():
+                     if fro['name']+fro['animal'] in convos[to['name']+to['animal']]:
+                        already = True
+
+                  if not already:
+                     self.TEMP += "\n" + to['name'] + ' asked ' + fro['name'] + ', "What exactly are you?"\n'
+                     self.TEMP += "\"Well, I'm " + referenced(fro['animal'])
+
+                     if "HasProperty" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
+                        self.TEMP += " and I'm " + self.clean_phrase(singularize(random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['HasProperty'])))
+
+                     self.TEMP += "."
+
+                     hasa = False
+                     if "HasA" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
+                        has = referenced(singularize(random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['HasA'])))
+                        self.TEMP += " I have " + self.clean_phrase(has)
+                        hasa = True
+
+                     capable = False
+                     if "CapableOf" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
+                        capable = True
+                        ability = random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['CapableOf'])
+
+                        can = "can"
+                        if ability.find("cannot ") == 0:
+                           can = "cannot"
+                           ability.replace("cannot ", "")
+
+                        if hasa:
+                           self.TEMP += " and"
+
+                        self.TEMP += " I " + can + " " + self.clean_phrase(ability) + ", can you?"
+
+                     if hasa and not capable:
+                        self.TEMP += "."
+
+                     self.TEMP += "\"\n"
+
+                     if capable:
+                        canto = False
+                        if 'CapableOf' in self.ANIMAL_CONCEPTS[to['animal']].keys():
+                           if ability in self.ANIMAL_CONCEPTS[to['animal']]['CapableOf']:
+                              canto = True
+                              self.TEMP += '"Yes I can!"'
+
+                        if not canto:
+                           self.TEMP += '"No I can' + "'t"
+
+                           if 'CapableOf' in self.ANIMAL_CONCEPTS[to['animal']].keys():
+                              self.TEMP += ", but I do know how to " + self.clean_phrase(random.choice(self.ANIMAL_CONCEPTS[to['animal']]['CapableOf'])) + "!"
+                           else:
+                              self.TEMP += ","
+
+                        self.TEMP += '" replied ' + to['name'] + ".\n"
+
+
+                     if to not in self.TEMP_CONVOS.keys():
+                        self.TEMP_CONVOS[to['name']+to['animal']] = []
+
+                     self.TEMP_CONVOS[to['name']+to['animal']].append(fro['name']+fro['animal'])
 
                self.MAZE[i][j]['v'] = 1
                self.MAZE[i][j][next[2]] = 1
@@ -368,7 +463,7 @@ class Journey:
          elif a != unfollowed[0]:
             temp += ", "
 
-         temp += a
+         temp += a['name'] + " the " + a['animal']
 
       if temp:
          temp += " stopped following me for some reason.\n"
@@ -380,6 +475,38 @@ class Journey:
       """Returns the current number of words in the text"""
 
       return len(re.split(r'[^0-9A-Za-z]+', self.full_text()))
+
+   # -------------------------------------------------------------------------------------------------------------
+   def clean_phrase(self, str):
+      """Cleans concept phrase for printing"""
+
+      return str.replace("_", " ")
+
+   # -------------------------------------------------------------------------------------------------------------
+   def get_animal_concepts(self, animal):
+      """Queries ConceptNet for data on a particular animal"""
+
+      if animal not in self.ANIMAL_CONCEPTS.keys():
+         r = requests.get(CONCEPTNET_URL + animal)
+
+         if r.json():
+            rels = {}
+
+            for e in r.json()['edges']:
+               rel = e['rel'].split('/')[-1]
+               end = e['end'].split('/')[-1]
+
+               if len(end.split('_')) <= 2 and end != animal:
+                  if rel not in rels.keys():
+                     rels[rel] = []
+
+                  rels[rel].append(end)
+
+            self.ANIMAL_CONCEPTS[animal] = rels
+
+      f = open('concepts.json', 'w')
+      f.write(json.dumps(self.ANIMAL_CONCEPTS))
+      f.close()
 
    # -------------------------------------------------------------------------------------------------------------
    def get_prologue(self):
@@ -419,7 +546,7 @@ class Journey:
             elif a != self.ANIMALS[0]: 
                temp += ", "
 
-            temp += a
+            temp += a['name'] + " the " + a['animal']
 
       return temp + ".\n"
 
@@ -438,7 +565,7 @@ class Journey:
             elif f != self.FLOWERS[0]:
                temp += ", "
 
-            temp += f
+            temp += referenced(f['color'] + " " + f['flower'])
 
       return temp + ".\n"
 
