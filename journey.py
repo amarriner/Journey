@@ -26,11 +26,13 @@ class Journey:
    TEXT = ''
    TEMP = ''
    THEN = False
+   DEBUG = ''
 
    # Maze variables
    MAZE = []
    MAZE_SIZE = 25
    MAZE_EXIT = {}
+   MAZE_START = {}
    FOUND_EXIT = False
    DIR_INDEX   = 0
    DIR_STRINGS = {'n': ['north', 'up'], 's': ['south', 'down'], 'e': ['east', 'right'], 'w': ['west', 'left']}
@@ -97,6 +99,7 @@ class Journey:
 
       self.MAZE = []
       self.TEMP = ''
+      self.DEBUG = ''
       self.TEMP_FLOWERS = []
       self.TEMP_ANIMALS = []
 
@@ -123,6 +126,7 @@ class Journey:
    def next_maze(self, i, j, build = False):
       """Returns a list which is the "next" square in a maze traversal and the direction it came from"""
 
+      start = None
       next = None
 
       # Keeps track of valid directions to go from 'here' (unvisited squares)
@@ -150,20 +154,35 @@ class Journey:
       # as well as the visited flag
       else:
          if j - 1 >= 0:
+#            if self.MAZE_START['i'] == i and self.MAZE_START['j'] == j - 1:
+#               start = 'n'
+
             if self.MAZE[i][j - 1]['s'] and not self.MAZE[i][j - 1]['v']:
                dirs.append('n')
 
          if j + 1 < self.MAZE_SIZE:
+#            if self.MAZE_START['i'] == i and self.MAZE_START['j'] == j + 1:
+#               start = 's'
+
             if self.MAZE[i][j + 1]['n'] and not self.MAZE[i][j + 1]['v']:
                dirs.append('s')
 
          if i + 1 < self.MAZE_SIZE:
+#            if self.MAZE_START['i'] == i + 1 and self.MAZE_START['j'] == j:
+#               start = 'e'
+
             if self.MAZE[i + 1][j]['w'] and not self.MAZE[i + 1][j]['v']:
                dirs.append('e')
 
          if i - 1 >= 0:
+#            if self.MAZE_START['i'] == i - 1 and self.MAZE_START['j'] == j:
+#               start = 'w'
+
             if self.MAZE[i - 1][j]['e'] and not self.MAZE[i - 1][j]['v']:
                dirs.append('w')
+
+#      if start and not len(dirs):
+#         dirs.append(start)
 
       if len(dirs):
          # Pick a random direction and update the current square's visited flag and the wall flag in that direction
@@ -209,6 +228,12 @@ class Journey:
                self.IMAGE.rectangle((i * 15 + 13, j * 15 + 2), (i * 15 + 14, j * 15 + 12), self.COLORS['white'])
 
          next = [i, j, self.OPPOSITE[dir]]
+
+      if not build:
+         if len(dirs):
+            self.DEBUG += "Available directions from (" + str(i) + "," + str(j) + "): " + str.join(" : ", dirs) + "\n"
+         else:
+            self.DEBUG += "No valid directions from (" + str(i) + "," + str(j) + ")!\n"
 
       return next       
 
@@ -256,6 +281,7 @@ class Journey:
 
             self.MAZE[i][j]['v'] = 1
             self.MAZE[i][j][self.OPPOSITE[next[2]]] = 1
+            stack.append({'i': i, 'j': j})
 
             i = next[0]
             j = next[1]
@@ -295,6 +321,7 @@ class Journey:
       square = stack[0]
       logging.info('Starting maze at (' + str(i) + ',' + str(j) + ')')
       self.IMAGE.filledRectangle((i * 15 + 4, j * 15 + 4), (i * 15 + 11, j * 15 + 11), self.COLORS['grey'])
+      self.MAZE_START = square
 
       self.THEN = False
 
@@ -308,17 +335,22 @@ class Journey:
          i = square['i']
          j = square['j']
 
+         self.DEBUG += "Square = (" + str(i) + "," + str(j) + ")\n"
+
          # Get a random neighbor that hasn't been visited
          next = self.next_maze(i, j)
 
          # If one was found, add it to the stack and flip its visited flag
          if next:
+            if square not in stack:
+               stack.append(square)
+
             first_dead_end = True
 
             last_i = i
             last_j = j
 
-            self.MAZE[i][j]['v'] = 1
+            self.DEBUG += "Moving " + self.OPPOSITE[next[2]] + "\n"
 
             i = next[0]
             j = next[1]
@@ -380,7 +412,7 @@ class Journey:
                self.THEN = False
                first_dead_end = False
 
-
+            self.DEBUG += "Couldn't find a neighbor, popping stack\n"
             square = stack.pop()
 
    # -------------------------------------------------------------------------------------------------------------
@@ -865,9 +897,22 @@ def main():
    j = Journey()
 
    # Keep building and traversing mazes until we have enough words
+   bad = 0
+   last = j.CHAPTER
    while j.count_words() < 50000:
       j.build_maze()
       j.traverse_maze()
+
+      if j.CHAPTER == last:
+         j.IMAGE.writePng("html/bad/" + str(j.CHAPTER) + "_" + str(bad) + ".png")
+
+         f = open("html/bad/" + str(j.CHAPTER) + "_" + str(bad) + ".txt", "w")
+         f.write(j.DEBUG)
+         f.close()
+
+         bad += 1
+
+      last = j.CHAPTER
 
    # Write the results out
    j.write_html()
