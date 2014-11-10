@@ -27,5 +27,13 @@ just incorporated that into the novel itself.
  * [pattern.en](http://www.clips.ua.ac.be/pages/pattern-en)
  * [ConceptNet](http://conceptnet5.media.mit.edu/)
 
+
+## Sample PDF Output
+
+In order to produce a more finished version, I saved a run of the novel's HTML output to PDF.
+
+[Sample PDF](https://github.com/amarriner/Journey/blob/master/Flora%20and%20Fauna.pdf?raw=true)
+
+
 ## Sample Map Image
 ![Sample Map Image](https://raw.githubusercontent.com/amarriner/Journey/master/html/maps/1.png)
