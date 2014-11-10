@@ -11,8 +11,21 @@ The script generates the requisite number of words right now, but it's (obviousl
 making it *slightly* more natural as well as adding more optional and random encounters/happenings. As well as, 
 perhaps, more complex events occurring in a single square of a given floor.
 
+Currently the narrator has a percent chance of finding either a flower or an animal in a given square. These are pulled from the 
+corpora repository. There's also a percent chance that the narrator will either pick up the flower they found, and a chance the 
+animal they found will follow them through the maze. Each level there's another chance some animals will stop following the 
+narrator. At the end of the story, there will be a list of flowers held and animals currently following the narrator.
+
+It now produces an HTML version of the novel with corresponding map images of each floor. I found that my mapping algorithm 
+wasn't actually producing good maps so as I was debugging and fixing that it made sense to be able to see what was going on. So I 
+just incorporated that into the novel itself.
+
 [My NaNoGenMo-2014 Issue](https://github.com/dariusk/NaNoGenMo-2014/issues/22)
 
 **Dependencies and Tools**
  * [corpora](https://github.com/dariusk/corpora)
  * [pattern.en](http://www.clips.ua.ac.be/pages/pattern-en)
+ * [ConceptNet](http://conceptnet5.media.mit.edu/)
+
+## Sample Map Image
+![Sample Map Image](https://raw.githubusercontent.com/amarriner/Journey/master/html/maps/1.png)
