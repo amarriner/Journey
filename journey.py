@@ -3,6 +3,7 @@
 
 from pattern.en import numerals, pluralize, referenced, singularize
 
+import gd
 import json
 import logging, logging.handlers
 import os
@@ -47,6 +48,8 @@ class Journey:
    TEMP_ANIMALS = []
    TEMP_CONVOS = {}
    ANIMAL_CONCEPTS = {}
+
+   COLORS = {}
 
    # -------------------------------------------------------------------------------------------------------------
    def __init__(self):
@@ -100,6 +103,9 @@ class Journey:
          for j in range(0, self.MAZE_SIZE):
             self.MAZE[i].append({'n': 0, 's': 0, 'e': 0, 'w': 0, 'v': 0})
 
+            self.IMAGE.rectangle((i * 15, j * 15), (i * 15 + 14, j * 15 + 14), self.COLORS['blue'])
+            self.IMAGE.rectangle((i * 15 + 1, j * 15 + 1), (i * 15 + 13, j * 15 + 13), self.COLORS['blue'])
+
    # -------------------------------------------------------------------------------------------------------------
    def reset_maze(self):
       """Resets the visited flag on each square to 0"""
@@ -109,7 +115,7 @@ class Journey:
             self.MAZE[i][j]['v'] = 0
 
    # -------------------------------------------------------------------------------------------------------------
-   def next_maze(self, i, j):
+   def next_maze(self, i, j, build = False):
       """Returns a list which is the "next" square in a maze traversal and the direction it came from"""
 
       next = None
@@ -117,47 +123,82 @@ class Journey:
       # Keeps track of valid directions to go from 'here' (unvisited squares)
       dirs = []
 
-      try:
-         if not self.MAZE[i][j - 1]['v']:
-            dirs.append('n')
-      except IndexError:
-         pass
+      if build:
+         if j - 1 >= 0:
+            if not self.MAZE[i][j - 1]['v']:
+               dirs.append('n')
 
-      try:
-         if not self.MAZE[i][j + 1]['v']:
-            dirs.append('s')
-      except IndexError:
-         pass
+         if j + 1 < self.MAZE_SIZE:
+            if not self.MAZE[i][j + 1]['v']:
+               dirs.append('s')
 
-      try:
-         if not self.MAZE[i + 1][j]['v']:
-            dirs.append('e')
-      except IndexError:
-         pass
+         if i + 1 < self.MAZE_SIZE:
+            if not self.MAZE[i + 1][j]['v']:
+               dirs.append('e')
 
-      try:
-         if not self.MAZE[i - 1][j]['v']:
-            dirs.append('w')
-      except IndexError:
-         pass
+         if i - 1 >= 0:
+            if not self.MAZE[i - 1][j]['v']:
+               dirs.append('w')
+
+      else:
+         if j - 1 >= 0:
+            if self.MAZE[i][j - 1]['s'] and not self.MAZE[i][j - 1]['v']:
+               dirs.append('n')
+
+         if j + 1 < self.MAZE_SIZE:
+            if self.MAZE[i][j + 1]['n'] and not self.MAZE[i][j + 1]['v']:
+               dirs.append('s')
+
+         if i + 1 < self.MAZE_SIZE:
+            if self.MAZE[i + 1][j]['w'] and not self.MAZE[i + 1][j]['v']:
+               dirs.append('e')
+
+         if i - 1 >= 0:
+            if self.MAZE[i - 1][j]['e'] and not self.MAZE[i - 1][j]['v']:
+               dirs.append('w')
 
       if len(dirs):
          # Pick a random direction and update the current square's visited flag and the wall flag in that direction
          dir = random.choice(dirs)
+         # logging.info("Found next square from (" + str(i) + "," + str(j) + ") in direction " + dir)
          self.MAZE[i][j][dir] = 1
 
          # Find the next square in the random direction and update those flags, too
          if dir == 'n':
+            if build:
+               self.IMAGE.rectangle((i * 15 + 2, j * 15), (i * 15 + 12, j * 15 + 1), self.COLORS['white'])
+
             j -= 1
 
+            if build:
+               self.IMAGE.rectangle((i * 15 + 2, j * 15 + 13), (i * 15 + 12, j * 15 + 14), self.COLORS['white'])
+
          if dir == 's':
+            if build:
+               self.IMAGE.rectangle((i * 15 + 2, j * 15 + 13), (i * 15 + 12, j * 15 + 14), self.COLORS['white'])
+
             j += 1
 
+            if build:
+               self.IMAGE.rectangle((i * 15 + 2, j * 15), (i * 15 + 12, j * 15 + 1), self.COLORS['white'])
+
          if dir == 'e':
+            if build:
+               self.IMAGE.rectangle((i * 15 + 13, j * 15 + 2), (i * 15 + 14, j * 15 + 12), self.COLORS['white'])
+
             i += 1
 
+            if build:
+               self.IMAGE.rectangle((i * 15, j * 15 + 2), (i * 15 + 1, j * 15 + 12), self.COLORS['white'])
+
          if dir == 'w':
+            if build:
+               self.IMAGE.rectangle((i * 15, j * 15 + 2), (i * 15 + 1, j * 15 + 12), self.COLORS['white'])
+
             i -= 1
+
+            if build:
+               self.IMAGE.rectangle((i * 15 + 13, j * 15 + 2), (i * 15 + 14, j * 15 + 12), self.COLORS['white'])
 
          next = [i, j, self.OPPOSITE[dir]]
 
@@ -169,11 +210,24 @@ class Journey:
 
       stack = []
 
+      self.IMAGE = gd.image((self.MAZE_SIZE * 15, self. MAZE_SIZE * 15))
+      self.COLORS['black']  = self.IMAGE.colorAllocate((0, 0, 0))
+      self.COLORS['white']  = self.IMAGE.colorAllocate((255, 255, 255))
+      self.COLORS['blue']   = self.IMAGE.colorAllocate((130, 130, 210))
+      self.COLORS['red']    = self.IMAGE.colorAllocate((210, 130, 130))
+      self.COLORS['orange'] = self.IMAGE.colorAllocate((255, 165, 0))
+      self.COLORS['green']  = self.IMAGE.colorAllocate((130, 210, 130))
+      self.COLORS['yellow'] = self.IMAGE.colorAllocate((255, 255, 200))
+      self.COLORS['purple'] = self.IMAGE.colorAllocate((210, 130, 210))
+      self.COLORS['grey']   = self.IMAGE.colorAllocate((180, 180, 180))
+      self.IMAGE.filledRectangle((0, 0), (self.MAZE_SIZE * 15, self. MAZE_SIZE * 15), self.COLORS['white'])
+
       self.init_maze()
 
       # Pick an exit at random
       i = random.randint(5, self.MAZE_SIZE - 5)
       j = random.randint(5, self.MAZE_SIZE - 5)
+      self.IMAGE.filledRectangle((i * 15 + 4, j * 15 + 4), (i * 15 + 11, j * 15 + 11), self.COLORS['orange'])
       stack.append({'i': i, 'j': j})
       self.MAZE_EXIT = stack[0]
       square = stack[0]
@@ -187,10 +241,13 @@ class Journey:
          j = square['j']
 
          # Get a random neighbor that hasn't been visited
-         next = self.next_maze(i, j)
+         next = self.next_maze(i, j, True)
 
          # If one was found, add it to the stack and flip its visited flag
          if next:
+
+            self.MAZE[i][j]['v'] = 1
+            self.MAZE[i][j][self.OPPOSITE[next[2]]] = 1
 
             i = next[0]
             j = next[1]
@@ -198,6 +255,7 @@ class Journey:
             self.MAZE[i][j]['v'] = 1
             self.MAZE[i][j][next[2]] = 1
 
+            square = {'i': i, 'j': j}
             stack.append({'i': i, 'j': j})
             total += 1
 
@@ -228,11 +286,14 @@ class Journey:
       stack.append({'i': i, 'j': j})
       square = stack[0]
       logging.info('Starting maze at (' + str(i) + ',' + str(j) + ')')
+      self.IMAGE.filledRectangle((i * 15 + 4, j * 15 + 4), (i * 15 + 11, j * 15 + 11), self.COLORS['grey'])
 
       then = False
 
       total = 0
       last_dir = ''
+      last_i = -1
+      last_j = -1
       # Run through the maze 
       while (len(stack)):
 
@@ -244,14 +305,30 @@ class Journey:
 
          # If one was found, add it to the stack and flip its visited flag
          if next:
+            first_dead_end = True
+
+            last_i = i
+            last_j = j
+
+            self.MAZE[i][j]['v'] = 1
 
             i = next[0]
             j = next[1]
+
+            self.MAZE[i][j]['v'] = 1
+            square = {'i': i, 'j': j}
+
+            if next[2] in ['e', 'w']:
+               self.IMAGE.filledRectangle((last_i * 15 + 7, last_j * 15 + 6), (i * 15 + 7, j * 15 + 8), self.COLORS['green'])
+            else:
+               self.IMAGE.filledRectangle((last_i * 15 + 6, last_j * 15 + 7), (i * 15 + 8, j * 15 + 7), self.COLORS['green'])
 
             # If we found an exit!
             if self.MAZE_EXIT['i'] == i and self.MAZE_EXIT['j'] == j:
                self.CHAPTER += 1
                
+               self.IMAGE.writePng("html/maps/" + str(self.CHAPTER) + ".png")
+
                self.TEXT += "~~~ CHAPTER " + numerals(str(self.CHAPTER)).upper() + " ~~~\n"
                self.TEXT += self.TEMP
                self.TEXT += "Then I " + random.choice(self.WALK) + " down a flight of stairs. "
@@ -319,6 +396,8 @@ class Journey:
                   self.TEMP += "There was a beautiful " + color + " " + flower + " there. "
                   self.TEMP += "It smelled like " + pluralize(random.choice(self.JSON['fruits'])) + "."
 
+                  self.IMAGE.filledRectangle((i * 15 + 3, j * 15 + 3), (i * 15 + 5, j * 15 + 5), self.COLORS['purple'])
+
                   # Is the narrator keeping this flower?
                   if random.randrange(100) < 10:
                      self.TEMP += " I picked it"
@@ -343,6 +422,8 @@ class Journey:
 
                   self.TEMP += "There was " + referenced(animal) + " there. "
                   self.TEMP += "I named it " + name + "."
+
+                  self.IMAGE.filledRectangle((i * 15 + 3, j * 15 + 9), (i * 15 + 5, j * 15 + 11), self.COLORS['red'])
 
                   # Did the animal follow the narrator?
                   if random.randrange(100) < 10:
@@ -440,9 +521,11 @@ class Journey:
          # Or if there are no valid directions, step back through the path to get to a square with
          # unvisited neighbors
          else:
-            if random.randrange(100) < 5:
+            if first_dead_end:
                self.TEMP += "Then I hit a dead-end. I was feeling lost so I retraced my steps.\n"
                then = False
+               first_dead_end = False
+
 
             square = stack.pop()
 
@@ -576,6 +659,63 @@ class Journey:
       return self.TITLE + "\n" + self.get_prologue() + self.TEXT + self.get_afterword()
 
    # -------------------------------------------------------------------------------------------------------------
+   def write_html(self):
+      """Builds HTML version of the book"""
+
+      html  = "<!DOCTYPE html>\n"
+      html += "<html>\n"
+      html += "<head>\n"
+      html += "<title>Flora and Fauna</title>\n"
+      html += '<meta charset="UTF-8">\n'
+      html += '<link rel="stylesheet" href="css/main.css" type="text/css">'
+      html += "</head>\n"
+      html += "<body>\n"
+
+      html += "<h1>Flora and Fauna</h1>\n"
+
+      prologue = re.sub(r'~~~ PROLOGUE ~~~', '<h2>PROLOGUE</h2>', self.get_prologue()).split("\n")
+      for line in prologue:
+         if line == prologue[0]:
+            html += line
+         else:
+            html += "<div>" + line + "</div>"
+
+      chapter = 1
+      for line in self.TEXT.split("\n"):
+         image = ""
+         if line[:3] == "~~~":
+            html += '<hr>'
+            image = '<div class="map"><img class="map_image" src="maps/' + str(chapter) + '.png" alt="Maze ' + str(chapter) + '"></div>'
+            chapter += 1
+         else:
+            line = "<div>" + line + "</div>"
+
+         line = re.sub(r'^~~~ ', '<h2>', line)
+         line = re.sub(r' ~~~$', '</h2>', line)
+         html += line
+
+         html += image
+
+         if not line: 
+            logging.info('-----NONE------')
+
+      afterword = re.sub(r'~~~ AFTERWORD ~~~', '<h2>AFTERWORD</h2>', self.get_afterword()).split("\n")
+      for line in afterword:
+         if line == afterword[1] or line == afterword[-2]:
+            line = re.sub(r'^THE END$', '<h2>THE END</h2>', line)
+
+            html += line
+         else:
+            html += "<div>" + line + "</div>"
+
+      html += "</body>\n"
+      html += "</html>\n"
+
+      f = open("html/index.html", "w")
+      f.write(html)
+      f.close()
+
+   # -------------------------------------------------------------------------------------------------------------
    def write_text(self):
       """Writes the TEXT attribute out to a file"""
 
@@ -635,6 +775,7 @@ def main():
       j.build_maze()
       j.traverse_maze()
 
+   j.write_html()
    j.write_text()
 
    logging.info('Done, with ' + str(j.count_words()) + ' words')

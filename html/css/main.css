@@ -1,0 +1,32 @@
+body {
+   font-family: Arial, Verdana, Helvetica;
+   font-size: 12px;
+   margin: 0;
+   padding: 0;
+}
+
+h1 {
+   background-color: #88b;
+   color: #fff;
+   margin: 0;
+   padding: 10px;
+}
+
+h2 {
+   padding: 10px;
+}
+
+div.map {
+   float: right;
+}
+
+div {
+   padding: 10px;
+}
+
+hr {
+   border: 2px dashed #88b; 
+   clear: both;
+   height: 0;
+   margin-top: 15px;
+}
