@@ -17,39 +17,44 @@ CONCEPTNET_URL = "http://conceptnet5.media.mit.edu/data/5.2/c/en/"
 class Journey:
    """Class that does all the heavy lifting"""
 
+   # Title of the book
    TITLE = "FLORA AND FAUNA"
 
+   # Keeping track of chapter numbers
    CHAPTER = 0
 
    TEXT = ''
    TEMP = ''
+   THEN = False
 
+   # Maze variables
    MAZE = []
    MAZE_SIZE = 25
    MAZE_EXIT = {}
-
+   FOUND_EXIT = False
    DIR_INDEX   = 0
    DIR_STRINGS = {'n': ['north', 'up'], 's': ['south', 'down'], 'e': ['east', 'right'], 'w': ['west', 'left']}
    OPPOSITE    = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
 
-   FOUND_EXIT = False
-
    JSON = {}
+   COLORS = {}
 
+   # Variations of "walk"
    WALK = ['walked', 'went', 'strode', 'ran', 'sprinted', 'hoofed it', 'beat cheeks', 'trekked', 'meandered', 'marched', 'shuffled', 'shambled', 'toddled', 'traipsed', 'plodded', 'strutted', 'trudged', 'paraded', 'hiked', 'ambled', 'sauntered', 'stepped']
 
+   # Options for flower tastes
    TASTES = ['awful', 'delicious', 'terrible', 'like chicken', 'okay', 'bad', 'good']
 
+   # List of flowers held by the narrator
    FLOWERS = []
    TEMP_FLOWERS = []
 
+   # Lists of animals and their conversations
    ANIMALS = []
    CONVOS = {}
    TEMP_ANIMALS = []
    TEMP_CONVOS = {}
    ANIMAL_CONCEPTS = {}
-
-   COLORS = {}
 
    # -------------------------------------------------------------------------------------------------------------
    def __init__(self):
@@ -123,6 +128,7 @@ class Journey:
       # Keeps track of valid directions to go from 'here' (unvisited squares)
       dirs = []
 
+      # If we're building the maze, not traversing it, only check the visited flag in a given square
       if build:
          if j - 1 >= 0:
             if not self.MAZE[i][j - 1]['v']:
@@ -140,6 +146,8 @@ class Journey:
             if not self.MAZE[i - 1][j]['v']:
                dirs.append('w')
 
+      # If we're traversing the maze, not building it check the existence of a wall in the given direction 
+      # as well as the visited flag
       else:
          if j - 1 >= 0:
             if self.MAZE[i][j - 1]['s'] and not self.MAZE[i][j - 1]['v']:
@@ -160,10 +168,10 @@ class Journey:
       if len(dirs):
          # Pick a random direction and update the current square's visited flag and the wall flag in that direction
          dir = random.choice(dirs)
-         # logging.info("Found next square from (" + str(i) + "," + str(j) + ") in direction " + dir)
          self.MAZE[i][j][dir] = 1
 
          # Find the next square in the random direction and update those flags, too
+         # and remove the walls on the map image
          if dir == 'n':
             if build:
                self.IMAGE.rectangle((i * 15 + 2, j * 15), (i * 15 + 12, j * 15 + 1), self.COLORS['white'])
@@ -288,7 +296,7 @@ class Journey:
       logging.info('Starting maze at (' + str(i) + ',' + str(j) + ')')
       self.IMAGE.filledRectangle((i * 15 + 4, j * 15 + 4), (i * 15 + 11, j * 15 + 11), self.COLORS['grey'])
 
-      then = False
+      self.THEN = False
 
       total = 0
       last_dir = ''
@@ -318,197 +326,38 @@ class Journey:
             self.MAZE[i][j]['v'] = 1
             square = {'i': i, 'j': j}
 
-            if next[2] in ['e', 'w']:
-               self.IMAGE.filledRectangle((last_i * 15 + 7, last_j * 15 + 6), (i * 15 + 7, j * 15 + 8), self.COLORS['green'])
-            else:
-               self.IMAGE.filledRectangle((last_i * 15 + 6, last_j * 15 + 7), (i * 15 + 8, j * 15 + 7), self.COLORS['green'])
-
             # If we found an exit!
             if self.MAZE_EXIT['i'] == i and self.MAZE_EXIT['j'] == j:
-               self.CHAPTER += 1
-               
-               self.IMAGE.writePng("html/maps/" + str(self.CHAPTER) + ".png")
 
-               self.TEXT += "~~~ CHAPTER " + numerals(str(self.CHAPTER)).upper() + " ~~~\n"
-               self.TEXT += self.TEMP
-               self.TEXT += "Then I " + random.choice(self.WALK) + " down a flight of stairs. "
+               self.do_exit(i, j, total, next, last_i, last_j)
 
-               self.FLOWERS += self.TEMP_FLOWERS
-               self.ANIMALS += self.TEMP_ANIMALS
-               
-               for c in self.TEMP_CONVOS:
-                  if c not in self.CONVOS.keys():
-                     self.CONVOS[c] = []
-
-                  self.CONVOS[c].append(self.TEMP_CONVOS[c])
-
-               # Check to see if any animals stopped following the narrator
-               self.TEXT += self.unfollow()
-
-               if self.ANIMALS:
-                  self.TEXT += "So far " + numerals(len(self.ANIMALS)) + " animal"
-
-                  if len(self.ANIMALS) > 1:
-                     self.TEXT += "s were following me"
-                  else:
-                     self.TEXT += " was following me"
-
-                  if self.FLOWERS:
-                     self.TEXT += ", and "
-
-                  else:
-                     self.TEXT += ". "
-
-               if self.FLOWERS:
-                  if not self.ANIMALS:
-                     self.TEXT += "So far "
-
-                  self.TEXT += "I held " + numerals(len(self.FLOWERS)) + " flower"
-
-                  if len(self.FLOWERS) > 1:
-                     self.TEXT += "s"
-
-                  self.TEXT += ". "
-
-               self.TEXT += "\n"
-
-               self.FOUND_EXIT = True
-
-               logging.info('--- CHAPTER ' + str(self.CHAPTER) + ' ---')
-               logging.info('Found the exit to the maze at (' + str(i) + ',' + str(j) + ')')
-               logging.info('Total steps: ' + str(total))
                stack = []
 
+            # Otherwise keep walking
             else:
-               if last_dir == self.OPPOSITE[next[2]] and then:
+
+               if last_dir == self.OPPOSITE[next[2]] and self.THEN:
                   self.TEMP += "Again I " + random.choice(self.WALK) + " " + self.DIR_STRINGS[self.OPPOSITE[next[2]]][self.DIR_INDEX] + ". "
-               elif then:
+               elif self.THEN:
                   self.TEMP += "Then I " + random.choice(self.WALK) + " " + self.DIR_STRINGS[self.OPPOSITE[next[2]]][self.DIR_INDEX] + ". "
                else:
                   self.TEMP += "I " + random.choice(self.WALK) + " " + self.DIR_STRINGS[self.OPPOSITE[next[2]]][self.DIR_INDEX] + ". "
-                  then = True
+                  self.THEN = True
 
                # Is there a flower here?
                if random.randrange(100) < 5:
-                  color  = random.choice(self.JSON['colors'])['color']
-                  flower = singularize(random.choice(self.JSON['flowers']))
 
-                  self.TEMP += "There was a beautiful " + color + " " + flower + " there. "
-                  self.TEMP += "It smelled like " + pluralize(random.choice(self.JSON['fruits'])) + "."
-
-                  self.IMAGE.filledRectangle((i * 15 + 3, j * 15 + 3), (i * 15 + 5, j * 15 + 5), self.COLORS['purple'])
-
-                  # Is the narrator keeping this flower?
-                  if random.randrange(100) < 10:
-                     self.TEMP += " I picked it"
-
-                     if self.TEMP_FLOWERS:
-                        self.TEMP += " and added it to the rest of my bouquet"
-                     self.TEMP += "."
-
-                     self.TEMP_FLOWERS.append({'color': color, 'flower': flower})
-
-                  # Does the narrator eat this flower instead?
-                  elif random.randrange(100) < 5:
-                     self.TEMP += " For some reason I ate it. It tasted " + random.choice(self.TASTES) + "."
-
-                  self.TEMP += "\n"
-                  then = False
+                  self.do_flower(i, j)
 
                # Or is there an animal here?
                elif random.randrange(100) < 5:
-                  animal = random.choice(self.JSON['animals'])
-                  name = random.choice(self.JSON['names'])
 
-                  self.TEMP += "There was " + referenced(animal) + " there. "
-                  self.TEMP += "I named it " + name + "."
-
-                  self.IMAGE.filledRectangle((i * 15 + 3, j * 15 + 9), (i * 15 + 5, j * 15 + 11), self.COLORS['red'])
-
-                  # Did the animal follow the narrator?
-                  if random.randrange(100) < 10:
-                     self.TEMP_ANIMALS.append({'name': name, 'animal': animal})
-
-                     self.get_animal_concepts(animal)
-
-                     self.TEMP += " It started following me."
-
-                  self.TEMP += "\n"
-
-                  then = False
+                  self.do_animal(i, j)
 
                # Or are two animals talking to each other?
                elif random.randrange(100) < 1 and len(self.ANIMALS) + len(self.TEMP_ANIMALS) > 1:
-                  all_animals = self.ANIMALS + self.TEMP_ANIMALS
-                  convos = self.TEMP_CONVOS
 
-                  to = random.choice(all_animals)
-                  fro = random.choice(all_animals)
-                  while fro == to:
-                     fro = random.choice(all_animals)
-
-                  already = False
-                  if to['name']+to['animal'] in convos.keys():
-                     if fro['name']+fro['animal'] in convos[to['name']+to['animal']]:
-                        already = True
-
-                  if not already:
-                     self.TEMP += "\n" + to['name'] + ' asked ' + fro['name'] + ', "What exactly are you?"\n'
-                     self.TEMP += "\"Well, I'm " + referenced(fro['animal'])
-
-                     if "HasProperty" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
-                        self.TEMP += " and I'm " + self.clean_phrase(singularize(random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['HasProperty'])))
-
-                     self.TEMP += "."
-
-                     hasa = False
-                     if "HasA" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
-                        has = referenced(singularize(random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['HasA'])))
-                        self.TEMP += " I have " + self.clean_phrase(has)
-                        hasa = True
-
-                     capable = False
-                     if "CapableOf" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
-                        capable = True
-                        ability = random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['CapableOf'])
-
-                        can = "can"
-                        if ability.find("cannot ") == 0:
-                           can = "cannot"
-                           ability.replace("cannot ", "")
-
-                        if hasa:
-                           self.TEMP += " and"
-
-                        self.TEMP += " I " + can + " " + self.clean_phrase(ability) + ", can you?"
-
-                     if hasa and not capable:
-                        self.TEMP += "."
-
-                     self.TEMP += "\"\n"
-
-                     if capable:
-                        canto = False
-                        if 'CapableOf' in self.ANIMAL_CONCEPTS[to['animal']].keys():
-                           if ability in self.ANIMAL_CONCEPTS[to['animal']]['CapableOf']:
-                              canto = True
-                              self.TEMP += '"Yes I can!"'
-
-                        if not canto:
-                           self.TEMP += '"No I can' + "'t"
-
-                           if 'CapableOf' in self.ANIMAL_CONCEPTS[to['animal']].keys():
-                              self.TEMP += ", but I do know how to " + self.clean_phrase(random.choice(self.ANIMAL_CONCEPTS[to['animal']]['CapableOf'])) + "!"
-                           else:
-                              self.TEMP += ","
-
-                        self.TEMP += '" replied ' + to['name'] + ".\n"
-
-
-                     if to not in self.TEMP_CONVOS.keys():
-                        self.TEMP_CONVOS[to['name']+to['animal']] = []
-
-                     self.TEMP_CONVOS[to['name']+to['animal']].append(fro['name']+fro['animal'])
+                  self.do_animal_conversation(i, j)
 
                self.MAZE[i][j]['v'] = 1
                self.MAZE[i][j][next[2]] = 1
@@ -518,27 +367,224 @@ class Journey:
 
                last_dir = self.OPPOSITE[next[2]]
 
+            if next[2] in ['e', 'w']:
+               self.IMAGE.filledRectangle((last_i * 15 + 7, last_j * 15 + 6), (i * 15 + 7, j * 15 + 8), self.COLORS['green'])
+            else:
+               self.IMAGE.filledRectangle((last_i * 15 + 6, last_j * 15 + 7), (i * 15 + 8, j * 15 + 7), self.COLORS['green'])
+
          # Or if there are no valid directions, step back through the path to get to a square with
          # unvisited neighbors
          else:
             if first_dead_end:
                self.TEMP += "Then I hit a dead-end. I was feeling lost so I retraced my steps.\n"
-               then = False
+               self.THEN = False
                first_dead_end = False
 
 
             square = stack.pop()
 
    # -------------------------------------------------------------------------------------------------------------
+   def do_exit(self, i, j, total, next, last_i, last_j):
+      """Process the end of a floor"""
+
+      self.FOUND_EXIT = True
+
+      # Place the last path on the image
+      if next[2] in ['e', 'w']:
+         self.IMAGE.filledRectangle((last_i * 15 + 7, last_j * 15 + 6), (i * 15 + 7, j * 15 + 8), self.COLORS['green'])
+      else:
+         self.IMAGE.filledRectangle((last_i * 15 + 6, last_j * 15 + 7), (i * 15 + 8, j * 15 + 7), self.COLORS['green'])
+
+      # Increment chapter, and write it
+      self.CHAPTER += 1
+      self.TEXT += "~~~ CHAPTER " + numerals(str(self.CHAPTER)).upper() + " ~~~\n"
+      self.TEXT += self.TEMP
+      self.TEXT += "Then I " + random.choice(self.WALK) + " down a flight of stairs. "
+
+      # Write the current map out to PNG
+      self.IMAGE.writePng("html/maps/" + str(self.CHAPTER) + ".png")
+
+      # Store flowers held, animals following, and conversations permanently
+      self.FLOWERS += self.TEMP_FLOWERS
+      self.ANIMALS += self.TEMP_ANIMALS
+      for c in self.TEMP_CONVOS:
+         if c not in self.CONVOS.keys():
+            self.CONVOS[c] = []
+
+         self.CONVOS[c].append(self.TEMP_CONVOS[c])
+
+      # Check to see if any animals stopped following the narrator, then print them
+      self.TEXT += self.unfollow()
+      self.get_animals_following()
+      self.get_flowers_held()
+
+      # Logging...
+      logging.info('--- CHAPTER ' + str(self.CHAPTER) + ' ---')
+      logging.info('Found the exit to the maze at (' + str(i) + ',' + str(j) + ')')
+      logging.info('Total steps: ' + str(total))
+
+   # -------------------------------------------------------------------------------------------------------------
+   def do_flower(self, i, j):
+      """Process finding a flower and possibly doing something with it"""
+
+      # Get a random color and flower name
+      color  = random.choice(self.JSON['colors'])['color']
+      flower = singularize(random.choice(self.JSON['flowers']))
+
+      # Print them
+      self.TEMP += "There was a beautiful " + color + " " + flower + " there. "
+      self.TEMP += "It smelled like " + pluralize(random.choice(self.JSON['fruits'])) + "."
+
+      # Put a square on the map to mark the flower
+      self.IMAGE.filledRectangle((i * 15 + 4, j * 15 + 4), (i * 15 + 11, j * 15 + 10), self.COLORS['purple'])
+
+      # Is the narrator keeping this flower?
+      if random.randrange(100) < 10:
+         self.TEMP += " I picked it"
+
+         if self.TEMP_FLOWERS:
+            self.TEMP += " and added it to the rest of my bouquet"
+ 
+         self.TEMP += "."
+
+         self.TEMP_FLOWERS.append({'color': color, 'flower': flower})
+
+      # Does the narrator eat this flower instead?
+      elif random.randrange(100) < 5:
+         self.TEMP += " For some reason I ate it. It tasted " + random.choice(self.TASTES) + "."
+
+      self.TEMP += "\n"
+      self.THEN = False
+
+   # -------------------------------------------------------------------------------------------------------------
+   def do_animal(self, i, j):
+      """Process finding an animal"""
+
+      # Get a random animal and give it a name
+      animal = random.choice(self.JSON['animals'])
+      name = random.choice(self.JSON['names'])
+
+      # Print that info
+      self.TEMP += "There was " + referenced(animal) + " there. "
+      self.TEMP += "I named it " + name + "."
+
+      # Put a square on the map to denote finding an animal here
+      self.IMAGE.filledRectangle((i * 15 + 4, j * 15 + 4), (i * 15 + 11, j * 15 + 10), self.COLORS['red'])
+
+      # Did the animal follow the narrator?
+      if random.randrange(100) < 10:
+         self.TEMP_ANIMALS.append({'name': name, 'animal': animal})
+         self.get_animal_concepts(animal)
+         self.TEMP += " It started following me."
+         self.TEMP += "\n"
+
+      self.THEN = False
+
+   # -------------------------------------------------------------------------------------------------------------
+   def do_animal_conversation(self, i, j):
+      """Make two animals talk to one another"""
+
+      # Make sure we have the entire list of animals and conversations
+      all_animals = self.ANIMALS + self.TEMP_ANIMALS
+      convos = self.TEMP_CONVOS
+
+      # Pick two animals and make sure they're not the same one
+      to = random.choice(all_animals)
+      fro = random.choice(all_animals)
+      while fro == to:
+         fro = random.choice(all_animals)
+
+      # Check to make sure the these two animals didn't have a conversation already (or at least the "to"
+      # animal didn't already initiate a conversation with the "from" animal
+      already = False
+      if to['name']+to['animal'] in convos.keys():
+         if fro['name']+fro['animal'] in convos[to['name']+to['animal']]:
+            already = True
+
+      # If this is a new conversation, continue
+      if not already:
+         self.TEMP += "\n" + to['name'] + ' asked ' + fro['name'] + ', "What exactly are you?"\n'
+         self.TEMP += "\"Well, I'm " + referenced(fro['animal'])
+
+         # If the "fro" animal has some properties in ConceptNet, print one randomly
+         if "HasProperty" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
+            self.TEMP += " and I'm " + self.clean_phrase(singularize(random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['HasProperty'])))
+
+         self.TEMP += "."
+
+         # If the "fro" animal has a "HasA" relationship in ConceptNet, print one randomly
+         hasa = False
+         if "HasA" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
+            has = referenced(singularize(random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['HasA'])))
+            self.TEMP += " I have " + self.clean_phrase(has)
+            hasa = True
+
+         # If the "fro" animal is capable of something, talk about it
+         capable = False
+         if "CapableOf" in self.ANIMAL_CONCEPTS[fro['animal']].keys():
+            capable = True
+            ability = random.choice(self.ANIMAL_CONCEPTS[fro['animal']]['CapableOf'])
+
+            # Sometimes the "CapableOf" relationship in ConceptNet is negated, so make 
+            # sure we have consistent logic
+            can = "can"
+            if ability.find("cannot ") == 0:
+               can = "cannot"
+               ability.replace("cannot ", "")
+
+            if hasa:
+               self.TEMP += " and"
+
+            # State the ability and ask the "to" animal if they can do the same thing
+            self.TEMP += " I " + can + " " + self.clean_phrase(ability) + ", can you?"
+
+         if hasa and not capable:
+            self.TEMP += "."
+
+         self.TEMP += "\"\n"
+
+         # If there was a stated ability for the "fro" animal
+         if capable:
+
+            # Check to see if the "to" animal also has the same ability, and if so say so
+            canto = False
+            if 'CapableOf' in self.ANIMAL_CONCEPTS[to['animal']].keys():
+               if ability in self.ANIMAL_CONCEPTS[to['animal']]['CapableOf']:
+                  canto = True
+                  self.TEMP += '"Yes I can!"'
+
+            # If not, say so
+            if not canto:
+               self.TEMP += '"No I can' + "'t"
+
+               # If they have other abilities, though, pick one and print it
+               if 'CapableOf' in self.ANIMAL_CONCEPTS[to['animal']].keys():
+                  self.TEMP += ", but I do know how to " + self.clean_phrase(random.choice(self.ANIMAL_CONCEPTS[to['animal']]['CapableOf'])) + "!"
+               else:
+                  self.TEMP += ","
+
+            self.TEMP += '" replied ' + to['name'] + ".\n"
+
+         # Add the conversation to the list
+         if to not in self.TEMP_CONVOS.keys():
+            self.TEMP_CONVOS[to['name']+to['animal']] = []
+
+         self.TEMP_CONVOS[to['name']+to['animal']].append(fro['name']+fro['animal'])
+
+   # -------------------------------------------------------------------------------------------------------------
    def unfollow(self):
       """Loop through the following animals list and randomly pick some to remove"""
 
+      # There's a percentage chance an animal may unfollow the narrator. Check for that,
+      # remove the animal from the list and add it to an unfollow list
       unfollowed = []
       for a in self.ANIMALS:
          if random.randrange(100) < 3:
             unfollowed.append(a)
             self.ANIMALS.remove(a)
 
+      # Loop through the unfollow list building a textual representation of the animals that 
+      # unfollowed. Return that string
       temp = ""
       for a in unfollowed:
          if a == unfollowed[-1] and len(unfollowed) > 1:
@@ -569,12 +615,14 @@ class Journey:
    def get_animal_concepts(self, animal):
       """Queries ConceptNet for data on a particular animal"""
 
+      # ConceptNet API: https://github.com/commonsense/conceptnet5/wiki/API
       if animal not in self.ANIMAL_CONCEPTS.keys():
          r = requests.get(CONCEPTNET_URL + animal)
 
          if r.json():
             rels = {}
 
+            # For each edge found, save each "end" in a list of "rels"
             for e in r.json()['edges']:
                rel = e['rel'].split('/')[-1]
                end = e['end'].split('/')[-1]
@@ -587,9 +635,45 @@ class Journey:
 
             self.ANIMAL_CONCEPTS[animal] = rels
 
+      # Cache all current concepts found after each pull from the ConceptNet API
       f = open('concepts.json', 'w')
       f.write(json.dumps(self.ANIMAL_CONCEPTS))
       f.close()
+
+   # -------------------------------------------------------------------------------------------------------------
+   def get_animals_following(self):
+      """Retrieve a textual list of animals currently following the narrator"""
+
+      if self.ANIMALS:
+         self.TEXT += "So far " + numerals(len(self.ANIMALS)) + " animal"
+
+         if len(self.ANIMALS) > 1:
+            self.TEXT += "s were following me"
+         else:
+            self.TEXT += " was following me"
+
+         if self.FLOWERS:
+            self.TEXT += ", and "
+
+         else:
+            self.TEXT += ". "
+
+   # -------------------------------------------------------------------------------------------------------------
+   def get_flowers_held(self):
+      """Get a textual representation of flowers currently held by the narrator"""
+
+      if self.FLOWERS:
+         if not self.ANIMALS:
+            self.TEXT += "So far "
+
+         self.TEXT += "I held " + numerals(len(self.FLOWERS)) + " flower"
+
+         if len(self.FLOWERS) > 1:
+            self.TEXT += "s"
+
+         self.TEXT += ". "
+
+      self.TEXT += "\n"
 
    # -------------------------------------------------------------------------------------------------------------
    def get_prologue(self):
@@ -667,28 +751,33 @@ class Journey:
       html += "<head>\n"
       html += "<title>Flora and Fauna</title>\n"
       html += '<meta charset="UTF-8">\n'
-      html += '<link rel="stylesheet" href="css/main.css" type="text/css">'
+      html += '<link rel="stylesheet" href="css/main.css" type="text/css">\n'
       html += "</head>\n"
       html += "<body>\n"
 
       html += "<h1>Flora and Fauna</h1>\n"
 
+      # Replace the tildas with <h2>
       prologue = re.sub(r'~~~ PROLOGUE ~~~', '<h2>PROLOGUE</h2>', self.get_prologue()).split("\n")
       for line in prologue:
          if line == prologue[0]:
-            html += line
+            html += line + "\n"
          else:
-            html += "<div>" + line + "</div>"
+            html += "<div>" + line + "</div>\n"
 
+      # Loop through all the text and add maps at chapter start
       chapter = 1
       for line in self.TEXT.split("\n"):
+
          image = ""
+
+         # Replace tildas with <h3>, start chapter
          if line[:3] == "~~~":
-            html += '<hr>'
-            image = '<div class="map"><img class="map_image" src="maps/' + str(chapter) + '.png" alt="Maze ' + str(chapter) + '"></div>'
+            html += '<hr>\n'
+            image = '<div class="map"><img class="map_image" src="maps/' + str(chapter) + '.png" alt="Maze ' + str(chapter) + '"></div>\n'
             chapter += 1
          else:
-            line = "<div>" + line + "</div>"
+            line = "<div>" + line + "</div>\n"
 
          line = re.sub(r'^~~~ ', '<h2>', line)
          line = re.sub(r' ~~~$', '</h2>', line)
@@ -699,18 +788,20 @@ class Journey:
          if not line: 
             logging.info('-----NONE------')
 
+      # Replace afterword tildas as before, and add it to HTML string
       afterword = re.sub(r'~~~ AFTERWORD ~~~', '<h2>AFTERWORD</h2>', self.get_afterword()).split("\n")
       for line in afterword:
          if line == afterword[1] or line == afterword[-2]:
             line = re.sub(r'^THE END$', '<h2>THE END</h2>', line)
 
-            html += line
+            html += line + "\n"
          else:
-            html += "<div>" + line + "</div>"
+            html += "<div>" + line + "</div>\n"
 
       html += "</body>\n"
       html += "</html>\n"
 
+      # Write HTML to file
       f = open("html/index.html", "w")
       f.write(html)
       f.close()
@@ -721,6 +812,7 @@ class Journey:
 
       text = ""
 
+      # Loop through the lines and wrap those over 80 characters
       for line in self.full_text().split("\n"):
          
          if len(line) > 80:
@@ -748,6 +840,7 @@ class Journey:
          else:
             text += line + "\n\n"
 
+      # Write it to file
       f = open('journey.txt', 'w')
       f.write(text)
       f.close()
@@ -771,10 +864,12 @@ def main():
    # Instantiate main object and begin
    j = Journey()
 
+   # Keep building and traversing mazes until we have enough words
    while j.count_words() < 50000:
       j.build_maze()
       j.traverse_maze()
 
+   # Write the results out
    j.write_html()
    j.write_text()
 
