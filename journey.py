@@ -49,13 +49,10 @@ class Journey:
 
    # List of flowers held by the narrator
    FLOWERS = []
-   TEMP_FLOWERS = []
 
    # Lists of animals and their conversations
    ANIMALS = []
    CONVOS = {}
-   TEMP_ANIMALS = []
-   TEMP_CONVOS = {}
    ANIMAL_CONCEPTS = {}
 
    # -------------------------------------------------------------------------------------------------------------
@@ -98,10 +95,7 @@ class Journey:
       """Initializes the maze object"""
 
       self.MAZE = []
-      self.TEMP = ''
       self.DEBUG = ''
-      self.TEMP_FLOWERS = []
-      self.TEMP_ANIMALS = []
 
       self.DIR_INDEX = random.randrange(2)
 
@@ -154,35 +148,20 @@ class Journey:
       # as well as the visited flag
       else:
          if j - 1 >= 0:
-#            if self.MAZE_START['i'] == i and self.MAZE_START['j'] == j - 1:
-#               start = 'n'
-
             if self.MAZE[i][j - 1]['s'] and not self.MAZE[i][j - 1]['v']:
                dirs.append('n')
 
          if j + 1 < self.MAZE_SIZE:
-#            if self.MAZE_START['i'] == i and self.MAZE_START['j'] == j + 1:
-#               start = 's'
-
             if self.MAZE[i][j + 1]['n'] and not self.MAZE[i][j + 1]['v']:
                dirs.append('s')
 
          if i + 1 < self.MAZE_SIZE:
-#            if self.MAZE_START['i'] == i + 1 and self.MAZE_START['j'] == j:
-#               start = 'e'
-
             if self.MAZE[i + 1][j]['w'] and not self.MAZE[i + 1][j]['v']:
                dirs.append('e')
 
          if i - 1 >= 0:
-#            if self.MAZE_START['i'] == i - 1 and self.MAZE_START['j'] == j:
-#               start = 'w'
-
             if self.MAZE[i - 1][j]['e'] and not self.MAZE[i - 1][j]['v']:
                dirs.append('w')
-
-#      if start and not len(dirs):
-#         dirs.append(start)
 
       if len(dirs):
          # Pick a random direction and update the current square's visited flag and the wall flag in that direction
@@ -310,9 +289,6 @@ class Journey:
 
       stack = []
       self.TEMP = ''
-      self.TEMP_FLOWERS = []
-      self.TEMP_ANIMALS = []
-      self.TEMP_CONVOS = self.CONVOS
 
       # Pick a start point at random
       i = random.randrange(self.MAZE_SIZE)
@@ -387,7 +363,7 @@ class Journey:
                   self.do_animal(i, j)
 
                # Or are two animals talking to each other?
-               elif random.randrange(100) < 1 and len(self.ANIMALS) + len(self.TEMP_ANIMALS) > 1:
+               elif random.randrange(100) < 1 and len(self.ANIMALS) > 1:
 
                   self.do_animal_conversation(i, j)
 
@@ -436,15 +412,6 @@ class Journey:
       # Write the current map out to PNG
       self.IMAGE.writePng("html/maps/" + str(self.CHAPTER) + ".png")
 
-      # Store flowers held, animals following, and conversations permanently
-      self.FLOWERS += self.TEMP_FLOWERS
-      self.ANIMALS += self.TEMP_ANIMALS
-      for c in self.TEMP_CONVOS:
-         if c not in self.CONVOS.keys():
-            self.CONVOS[c] = []
-
-         self.CONVOS[c].append(self.TEMP_CONVOS[c])
-
       # Check to see if any animals stopped following the narrator, then print them
       self.TEXT += self.unfollow()
       self.get_animals_following()
@@ -474,12 +441,12 @@ class Journey:
       if random.randrange(100) < 10:
          self.TEMP += " I picked it"
 
-         if self.TEMP_FLOWERS:
+         if self.FLOWERS:
             self.TEMP += " and added it to the rest of my bouquet"
  
          self.TEMP += "."
 
-         self.TEMP_FLOWERS.append({'color': color, 'flower': flower})
+         self.FLOWERS.append({'color': color, 'flower': flower})
 
       # Does the narrator eat this flower instead?
       elif random.randrange(100) < 5:
@@ -505,32 +472,28 @@ class Journey:
 
       # Did the animal follow the narrator?
       if random.randrange(100) < 10:
-         self.TEMP_ANIMALS.append({'name': name, 'animal': animal})
+         self.ANIMALS.append({'name': name, 'animal': animal})
          self.get_animal_concepts(animal)
          self.TEMP += " It started following me."
-         self.TEMP += "\n"
 
+      self.TEMP += "\n"
       self.THEN = False
 
    # -------------------------------------------------------------------------------------------------------------
    def do_animal_conversation(self, i, j):
       """Make two animals talk to one another"""
 
-      # Make sure we have the entire list of animals and conversations
-      all_animals = self.ANIMALS + self.TEMP_ANIMALS
-      convos = self.TEMP_CONVOS
-
       # Pick two animals and make sure they're not the same one
-      to = random.choice(all_animals)
-      fro = random.choice(all_animals)
+      to = random.choice(self.ANIMALS)
+      fro = random.choice(self.ANIMALS)
       while fro == to:
-         fro = random.choice(all_animals)
+         fro = random.choice(self.ANIMALS)
 
       # Check to make sure the these two animals didn't have a conversation already (or at least the "to"
       # animal didn't already initiate a conversation with the "from" animal
       already = False
-      if to['name']+to['animal'] in convos.keys():
-         if fro['name']+fro['animal'] in convos[to['name']+to['animal']]:
+      if to['name']+to['animal'] in self.CONVOS.keys():
+         if fro['name']+fro['animal'] in self.CONVOS[to['name']+to['animal']]:
             already = True
 
       # If this is a new conversation, continue
@@ -598,10 +561,10 @@ class Journey:
             self.TEMP += '" replied ' + to['name'] + ".\n"
 
          # Add the conversation to the list
-         if to not in self.TEMP_CONVOS.keys():
-            self.TEMP_CONVOS[to['name']+to['animal']] = []
+         if to not in self.CONVOS.keys():
+            self.CONVOS[to['name']+to['animal']] = []
 
-         self.TEMP_CONVOS[to['name']+to['animal']].append(fro['name']+fro['animal'])
+         self.CONVOS[to['name']+to['animal']].append(fro['name']+fro['animal'])
 
    # -------------------------------------------------------------------------------------------------------------
    def unfollow(self):
@@ -787,7 +750,14 @@ class Journey:
       html += "</head>\n"
       html += "<body>\n"
 
-      html += "<h1>Flora and Fauna</h1>\n"
+      html += '<div id="header">\n'
+      html += '<h1>' + self.TITLE + '</h1>\n'
+      html += '<div id="credits">\n'
+      html += '<span>Generated for <a href="https://github.com/dariusk/NaNoGenMo-2014">#NaNoGenMo 2014</a> by' 
+      html += '<a href="https://twitter.com/amarriner">@amarriner</a></span>\n'
+      html += '<span>Source code on <a href="https://github.com/amarriner/Journey">GitHub</a></span>\n'
+      html += '</div>\n'
+      html += '</div>\n'
 
       # Replace the tildas with <h2>
       prologue = re.sub(r'~~~ PROLOGUE ~~~', '<h2>PROLOGUE</h2>', self.get_prologue()).split("\n")
@@ -821,14 +791,16 @@ class Journey:
             logging.info('-----NONE------')
 
       # Replace afterword tildas as before, and add it to HTML string
+      html += '<hr>\n'
       afterword = re.sub(r'~~~ AFTERWORD ~~~', '<h2>AFTERWORD</h2>', self.get_afterword()).split("\n")
       for line in afterword:
-         if line == afterword[1] or line == afterword[-2]:
-            line = re.sub(r'^THE END$', '<h2>THE END</h2>', line)
+         if line:
+            if line == afterword[1] or line == afterword[-2]:
+               line = re.sub(r'^THE END$', '<h2>THE END</h2>', line)
 
-            html += line + "\n"
-         else:
-            html += "<div>" + line + "</div>\n"
+               html += line + "\n"
+            else:
+               html += "<div>" + line + "</div>\n"
 
       html += "</body>\n"
       html += "</html>\n"
