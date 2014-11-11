@@ -583,6 +583,8 @@ class Journey:
 
          self.CONVOS[to['name']+to['animal']].append(fro['name']+fro['animal'])
 
+         self.THEN = False
+
    # -------------------------------------------------------------------------------------------------------------
    def unfollow(self):
       """Loop through the following animals list and randomly pick some to remove"""
