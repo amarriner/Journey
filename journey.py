@@ -12,6 +12,7 @@ import re
 import requests
 import sys
 
+PRESIDENTS_URL = "https://www.govtrack.us/api/v2/role?role_type=president"
 CONCEPTNET_URL = "http://conceptnet5.media.mit.edu/data/5.2/c/en/"
 
 class Journey:
@@ -36,6 +37,7 @@ class Journey:
    FOUND_EXIT = False
    DIR_INDEX   = 0
    DIR_STRINGS = {'n': ['north', 'up'], 's': ['south', 'down'], 'e': ['east', 'right'], 'w': ['west', 'left']}
+   DIR_OFFSETS = {'n': {'i': 0, 'j': -1}, 's': {'i': 0, 'j': 1}, 'e': {'i': 1, 'j': 0}, 'w': {'i': -1, 'j': 0}}
    OPPOSITE    = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
 
    JSON = {}
@@ -54,6 +56,12 @@ class Journey:
    ANIMALS = []
    CONVOS = {}
    ANIMAL_CONCEPTS = {}
+
+   GHOST = {}
+   GHOSTS = ['ghost', 'shade', 'specter', 'apparition', 'haunt', 'phantasm', 'wraith']
+   GHOST_SEEN = False
+   GHOST_LAST = None
+   GHOST_LAST_DIR = None
 
    # -------------------------------------------------------------------------------------------------------------
    def __init__(self):
@@ -88,6 +96,18 @@ class Journey:
       if os.path.exists('concepts.json'):
          f = open('concepts.json')
          self.ANIMAL_CONCEPTS = json.loads(f.read())
+         f.close()
+
+      if os.path.exists('presidents.json'):
+         f = open('presidents.json')
+         self.JSON['presidents'] = json.loads(f.read())
+         f.close()
+      else:
+         r = requests.get(PRESIDENTS_URL)
+         self.JSON['presidents'] = r.json()
+
+         f = open('presidents.json', 'w')
+         f.write(json.dumps(r.json()) + "\n")
          f.close()
 
    # -------------------------------------------------------------------------------------------------------------
@@ -315,6 +335,11 @@ class Journey:
       # Reset the visited flags on each square
       self.reset_maze()
 
+      # Set the ghost
+      i = random.randrange(self.MAZE_SIZE)
+      j = random.randrange(self.MAZE_SIZE)
+      self.GHOST = {'i': i, 'j': j}
+
       logging.info('Built Maze... (' + str(total) + ')')
 
    # -------------------------------------------------------------------------------------------------------------
@@ -346,6 +371,8 @@ class Journey:
          j = square['j']
 
          self.DEBUG += "Square = (" + str(i) + "," + str(j) + ")\n"
+
+         self.move_ghost(i, j)
 
          # Get a random neighbor that hasn't been visited
          next = self.next_maze(i, j)
@@ -386,8 +413,13 @@ class Journey:
                   self.TEMP += "I " + random.choice(self.WALK) + " " + self.DIR_STRINGS[self.OPPOSITE[next[2]]][self.DIR_INDEX] + ". "
                   self.THEN = True
 
-               # Is there a flower here?
-               if random.randrange(100) < 5:
+               # Is the ghost here?
+               if self.GHOST == square:
+
+                  self.do_ghost()
+
+               # Or is there a flower here?
+               elif random.randrange(100) < 5:
 
                   self.do_flower(i, j)
 
@@ -426,6 +458,50 @@ class Journey:
             square = stack.pop()
 
    # -------------------------------------------------------------------------------------------------------------
+   def move_ghost(self, i, j):
+      """Moves the ghost roughly towards the narrator (can pass through walls)"""
+
+      dir = None
+
+      # If the ghost was already seen once on this floor, they won't move or be seen again on this same floor
+      # Denoted by the ghost being off the map
+      if self.GHOST != {'i': -1, 'j': -1}:
+
+         dx = self.GHOST['i'] - i
+         dy = self.GHOST['j'] - j
+
+         # If delta-x is 0 then move along the x-axis
+         if dx == 0:
+            if dx > 0:
+               dir = 'w'
+            else:
+               dir = 'e'
+
+         # Else if delta-y is 0 then move along the y-axis
+         elif dy == 0:
+            if dy > 0:
+               dir = 'n'
+            else:
+               dir = 's'
+
+         # Otherwise, pick an axis to move on
+         else:
+            if random.randrange(1, 100) > 50:
+               if dx > 0:
+                  dir = 'w'
+               else:
+                  dir = 'e'
+            else:
+               if dy > 0:
+                  dir = 'n'
+               else:
+                  dir = 's'
+
+         self.GHOST['i'] += self.DIR_OFFSETS[dir]['i']
+         self.GHOST['j'] += self.DIR_OFFSETS[dir]['j']
+         self.GHOST_LAST_DIR = dir
+
+   # -------------------------------------------------------------------------------------------------------------
    def do_exit(self, i, j, total, next, last_i, last_j):
       """Process the end of a floor"""
 
@@ -460,6 +536,50 @@ class Journey:
       logging.info('--- CHAPTER ' + str(self.CHAPTER) + ' ---')
       logging.info('Found the exit to the maze at (' + str(i) + ',' + str(j) + ')')
       logging.info('Total steps: ' + str(total))
+
+   # -------------------------------------------------------------------------------------------------------------
+   def do_ghost(self):
+      """Process encountering the ghost"""
+
+      # Pick an random US president to use as the ghost
+      potus = random.choice(self.JSON['presidents']['objects'])
+
+      # Where did the ghost come from?
+      fromi = self.GHOST['i'] + self.DIR_OFFSETS[self.GHOST_LAST_DIR]['i']
+      fromj = self.GHOST['j'] + self.DIR_OFFSETS[self.GHOST_LAST_DIR]['j']
+
+      # If we saw it beforeshow a slightly different message
+      if self.GHOST_SEEN:
+         self.TEMP += "The " + random.choice(self.GHOSTS) + " appeared again from the " 
+         self.TEMP += self.DIR_STRINGS[self.OPPOSITE[self.GHOST_LAST_DIR]][0] + ". "
+
+         # Check to see if the ghost came from an invalid direction
+         if fromi < 0 or fromi >= self.MAZE_SIZE or fromj < 0 or fromj >= self.MAZE_SIZE:
+            self.TEMP += "It came right through the wall! "
+         elif self.MAZE[fromi][fromj][self.GHOST_LAST_DIR]:
+            self.TEMP += "It came right through the wall! "
+
+         # Check to see if it still looks like it did before
+         if self.GHOST_LAST == potus:
+            self.TEMP += "It still looked like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
+         # Otherwise, it's a new president
+         else:
+            self.TEMP += "This time it looked like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
+      else:
+         self.TEMP += "A scary " + random.choice(self.GHOSTS) + " appeared from the " 
+         self.TEMP += self.DIR_STRINGS[self.OPPOSITE[self.GHOST_LAST_DIR]][0] + "! "
+
+         if fromi < 0 or fromi >= self.MAZE_SIZE or fromj < 0 or fromj >= self.MAZE_SIZE:
+            self.TEMP += "It came right through the wall! "
+         elif self.MAZE[fromi][fromj][self.GHOST_LAST_DIR]:
+            self.TEMP += "It came right through the wall! "
+
+         self.TEMP += "It looked a little like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
+
+      # Update that we saw the ghost and remove it from this floor
+      self.GHOST_LAST = potus
+      self.GHOST_SEEN = True
+      self.GHOST = {'i': -1, 'j': -1}
 
    # -------------------------------------------------------------------------------------------------------------
    def do_flower(self, i, j):
