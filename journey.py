@@ -550,15 +550,6 @@ class Journey:
       # Pick an random US president to use as the ghost
       potus = random.choice(self.JSON['presidents']['objects'])
 
-      # Build the full name of the president to use as a key for the JSON['quotes'] object
-      mi = ""
-      if potus['person']['middlename']:
-         for n in potus['person']['middlename'].split(" "):
-            mi += n[:1] + "."
-
-         mi = mi + " "
-      fullname = potus['person']['firstname'] + " " + mi + potus['person']['lastname']     
-
       # Where did the ghost come from?
       fromi = self.GHOST['i'] + self.DIR_OFFSETS[self.GHOST_LAST_DIR]['i']
       fromj = self.GHOST['j'] + self.DIR_OFFSETS[self.GHOST_LAST_DIR]['j']
@@ -582,8 +573,9 @@ class Journey:
             self.TEMP += "This time it looked like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
 
          # If this ghost has quotes, pick one and say it
-         if fullname in self.JSON['quotes'].keys():
-            self.TEMP += 'It said, "' + random.choice(self.JSON['quotes'][fullname]) + '," to me. '
+         for q in self.JSON['quotes']:
+            if q['id'] == potus['id']:
+               self.TEMP += 'It said, "' + random.choice(q['quotes']) + '," to me. '
 
       else:
          self.TEMP += "A scary " + random.choice(self.GHOSTS) + " appeared from the " 
@@ -596,8 +588,9 @@ class Journey:
 
          self.TEMP += "It looked a little like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
 
-         if fullname in self.JSON['quotes'].keys():
-            self.TEMP += 'It said, "' + random.choice(self.JSON['quotes'][fullname]) + '," to me. '
+         for q in self.JSON['quotes']:
+            if q['id'] == potus['id']:
+               self.TEMP += 'It said, "' + random.choice(q['quotes']) + '," to me. '
 
       # Update that we saw the ghost and remove it from this floor
       self.GHOST_LAST = potus
