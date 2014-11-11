@@ -151,17 +151,34 @@ class Journey:
             if self.MAZE[i][j - 1]['s'] and not self.MAZE[i][j - 1]['v']:
                dirs.append('n')
 
+               if self.MAZE_START == {'i': i, 'j': j - 1}:
+                  start = 'n'
+
          if j + 1 < self.MAZE_SIZE:
             if self.MAZE[i][j + 1]['n'] and not self.MAZE[i][j + 1]['v']:
                dirs.append('s')
+
+               if self.MAZE_START == {'i': i, 'j': j + 1}:
+                  start = 's'
 
          if i + 1 < self.MAZE_SIZE:
             if self.MAZE[i + 1][j]['w'] and not self.MAZE[i + 1][j]['v']:
                dirs.append('e')
 
+               if self.MAZE_START == {'i': i + 1, 'j': j}:
+                  start = 'e'
+
          if i - 1 >= 0:
             if self.MAZE[i - 1][j]['e'] and not self.MAZE[i - 1][j]['v']:
                dirs.append('w')
+
+               if self.MAZE_START == {'i': i - 1, 'j': j}:
+                  start = 'w'
+
+      # If one of the possible directions is the start square for this floor and there are more
+      # available directions than just that square, remove it from the possible choices
+      if start and len(dirs) > 1:
+         dirs.remove(start)
 
       if len(dirs):
          # Pick a random direction and update the current square's visited flag and the wall flag in that direction
@@ -753,7 +770,7 @@ class Journey:
       html += '<div id="header">\n'
       html += '<h1>' + self.TITLE + '</h1>\n'
       html += '<div id="credits">\n'
-      html += '<span>Generated for <a href="https://github.com/dariusk/NaNoGenMo-2014">#NaNoGenMo 2014</a> by' 
+      html += '<span>Generated for <a href="https://github.com/dariusk/NaNoGenMo-2014">#NaNoGenMo 2014</a> by ' 
       html += '<a href="https://twitter.com/amarriner">@amarriner</a></span>\n'
       html += '<span>Source code on <a href="https://github.com/amarriner/Journey">GitHub</a></span>\n'
       html += '</div>\n'
