@@ -649,7 +649,7 @@ class Journey:
 
       # Cache all current concepts found after each pull from the ConceptNet API
       f = open('concepts.json', 'w')
-      f.write(json.dumps(self.ANIMAL_CONCEPTS))
+      f.write(json.dumps(self.ANIMAL_CONCEPTS) + "\n")
       f.close()
 
    # -------------------------------------------------------------------------------------------------------------
