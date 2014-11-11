@@ -198,42 +198,45 @@ class Journey:
          self.MAZE[i][j][dir] = 1
 
          # Find the next square in the random direction and update those flags, too
-         # and remove the walls on the map image
+         # and remove the walls on the map image.
+         # --------------------------------------------------------------
+         # !!! This whole part is terrible and needs to be refactored !!!
+         # --------------------------------------------------------------
          if dir == 'n':
             if build:
-               self.IMAGE.rectangle((i * 15 + 2, j * 15), (i * 15 + 12, j * 15 + 1), self.COLORS['white'])
+               self.IMAGE.rectangle((i * 15 + 2, j * 15), (i * 15 + 12, j * 15 + 1), self.COLORS['grid'])
 
             j -= 1
 
             if build:
-               self.IMAGE.rectangle((i * 15 + 2, j * 15 + 13), (i * 15 + 12, j * 15 + 14), self.COLORS['white'])
+               self.IMAGE.rectangle((i * 15 + 2, j * 15 + 13), (i * 15 + 12, j * 15 + 14), self.COLORS['grid'])
 
          if dir == 's':
             if build:
-               self.IMAGE.rectangle((i * 15 + 2, j * 15 + 13), (i * 15 + 12, j * 15 + 14), self.COLORS['white'])
+               self.IMAGE.rectangle((i * 15 + 2, j * 15 + 13), (i * 15 + 12, j * 15 + 14), self.COLORS['grid'])
 
             j += 1
 
             if build:
-               self.IMAGE.rectangle((i * 15 + 2, j * 15), (i * 15 + 12, j * 15 + 1), self.COLORS['white'])
+               self.IMAGE.rectangle((i * 15 + 2, j * 15), (i * 15 + 12, j * 15 + 1), self.COLORS['grid'])
 
          if dir == 'e':
             if build:
-               self.IMAGE.rectangle((i * 15 + 13, j * 15 + 2), (i * 15 + 14, j * 15 + 12), self.COLORS['white'])
+               self.IMAGE.rectangle((i * 15 + 13, j * 15 + 2), (i * 15 + 14, j * 15 + 12), self.COLORS['grid'])
 
             i += 1
 
             if build:
-               self.IMAGE.rectangle((i * 15, j * 15 + 2), (i * 15 + 1, j * 15 + 12), self.COLORS['white'])
+               self.IMAGE.rectangle((i * 15, j * 15 + 2), (i * 15 + 1, j * 15 + 12), self.COLORS['grid'])
 
          if dir == 'w':
             if build:
-               self.IMAGE.rectangle((i * 15, j * 15 + 2), (i * 15 + 1, j * 15 + 12), self.COLORS['white'])
+               self.IMAGE.rectangle((i * 15, j * 15 + 2), (i * 15 + 1, j * 15 + 12), self.COLORS['grid'])
 
             i -= 1
 
             if build:
-               self.IMAGE.rectangle((i * 15 + 13, j * 15 + 2), (i * 15 + 14, j * 15 + 12), self.COLORS['white'])
+               self.IMAGE.rectangle((i * 15 + 13, j * 15 + 2), (i * 15 + 14, j * 15 + 12), self.COLORS['grid'])
 
          next = [i, j, self.OPPOSITE[dir]]
 
@@ -261,7 +264,9 @@ class Journey:
       self.COLORS['yellow'] = self.IMAGE.colorAllocate((255, 255, 200))
       self.COLORS['purple'] = self.IMAGE.colorAllocate((210, 130, 210))
       self.COLORS['grey']   = self.IMAGE.colorAllocate((180, 180, 180))
-      self.IMAGE.filledRectangle((0, 0), (self.MAZE_SIZE * 15, self. MAZE_SIZE * 15), self.COLORS['white'])
+      self.COLORS['floor']  = self.IMAGE.colorAllocate((240, 240, 240))
+      self.COLORS['grid']   = self.IMAGE.colorAllocate((220, 220, 220))
+      self.IMAGE.filledRectangle((0, 0), (self.MAZE_SIZE * 15, self. MAZE_SIZE * 15), self.COLORS['floor'])
 
       self.init_maze()
 
