@@ -93,26 +93,26 @@ class Journey:
       self.JSON['names'] = json.loads(f.read())['firstNames']
       f.close()
 
-      if os.path.exists('concepts.json'):
-         f = open('concepts.json')
+      if os.path.exists('json/concepts.json'):
+         f = open('json/concepts.json')
          self.ANIMAL_CONCEPTS = json.loads(f.read())
          f.close()
 
-      if os.path.exists('presidents.json'):
-         f = open('presidents.json')
+      if os.path.exists('json/presidents.json'):
+         f = open('json/presidents.json')
          self.JSON['presidents'] = json.loads(f.read())
          f.close()
       else:
          r = requests.get(PRESIDENTS_URL)
          self.JSON['presidents'] = r.json()
 
-         f = open('presidents.json', 'w')
+         f = open('json/presidents.json', 'w')
          f.write(json.dumps(r.json()) + "\n")
          f.close()
 
       # Quotes from http://www.lifehack.org/articles/productivity/55-inspiring-quotes-from-presidents-that-will-change-your-life.html
-      if os.path.exists('quotes.json'):
-         f = open('quotes.json')
+      if os.path.exists('json/quotes.json'):
+         f = open('json/quotes.json')
          self.JSON['quotes'] = json.loads(f.read())
          f.close()
 
@@ -573,7 +573,7 @@ class Journey:
             self.TEMP += "This time it looked like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
 
          # If this ghost has quotes, pick one and say it
-         for q in self.JSON['quotes']:
+         for q in self.JSON['quotes']['data']:
             if q['id'] == potus['id']:
                self.TEMP += 'It said, "' + random.choice(q['quotes']) + '," to me. '
 
@@ -588,7 +588,7 @@ class Journey:
 
          self.TEMP += "It looked a little like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
 
-         for q in self.JSON['quotes']:
+         for q in self.JSON['quotes']['data']:
             if q['id'] == potus['id']:
                self.TEMP += 'It said, "' + random.choice(q['quotes']) + '," to me. '
 
@@ -808,7 +808,7 @@ class Journey:
             self.ANIMAL_CONCEPTS[animal] = rels
 
       # Cache all current concepts found after each pull from the ConceptNet API
-      f = open('concepts.json', 'w')
+      f = open('json/concepts.json', 'w')
       f.write(json.dumps(self.ANIMAL_CONCEPTS) + "\n")
       f.close()
 
