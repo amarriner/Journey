@@ -112,9 +112,21 @@ class Journey:
    def reset_maze(self):
       """Resets the visited flag on each square to 0"""
 
-      for i in range(0, self.MAZE_SIZE):
-         for j in range(0, self.MAZE_SIZE):
+      for i in range(self.MAZE_SIZE):
+         for j in range(self.MAZE_SIZE):
             self.MAZE[i][j]['v'] = 0
+
+   # -------------------------------------------------------------------------------------------------------------
+   def count_visited(self):
+      """Counts the number of squares visited"""
+
+      total = 0
+      for i in range(self.MAZE_SIZE):
+         for j in range(self.MAZE_SIZE):
+            if self.MAZE[i][j]['v'] == 1:
+               total += 1
+
+      return total
 
    # -------------------------------------------------------------------------------------------------------------
    def next_maze(self, i, j, build = False):
@@ -434,6 +446,11 @@ class Journey:
       self.get_animals_following()
       self.get_flowers_held()
 
+      # Print the percent of this floor explored
+      self.TEXT += "It seemed like I had explored about " 
+      self.TEXT += numerals(str(self.count_visited() * 1.0 / (self.MAZE_SIZE * self.MAZE_SIZE) * 100).split('.')[0])
+      self.TEXT += " percent of this floor.\n"
+
       # Logging...
       logging.info('--- CHAPTER ' + str(self.CHAPTER) + ' ---')
       logging.info('Found the exit to the maze at (' + str(i) + ',' + str(j) + ')')
@@ -686,8 +703,6 @@ class Journey:
             self.TEXT += "s"
 
          self.TEXT += ". "
-
-      self.TEXT += "\n"
 
    # -------------------------------------------------------------------------------------------------------------
    def get_prologue(self):
