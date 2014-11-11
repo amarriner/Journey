@@ -110,6 +110,12 @@ class Journey:
          f.write(json.dumps(r.json()) + "\n")
          f.close()
 
+      # Quotes from http://www.lifehack.org/articles/productivity/55-inspiring-quotes-from-presidents-that-will-change-your-life.html
+      if os.path.exists('quotes.json'):
+         f = open('quotes.json')
+         self.JSON['quotes'] = json.loads(f.read())
+         f.close()
+
    # -------------------------------------------------------------------------------------------------------------
    def init_maze(self):
       """Initializes the maze object"""
@@ -544,6 +550,15 @@ class Journey:
       # Pick an random US president to use as the ghost
       potus = random.choice(self.JSON['presidents']['objects'])
 
+      # Build the full name of the president to use as a key for the JSON['quotes'] object
+      mi = ""
+      if potus['person']['middlename']:
+         for n in potus['person']['middlename'].split(" "):
+            mi += n[:1] + "."
+
+         mi = mi + " "
+      fullname = potus['person']['firstname'] + " " + mi + potus['person']['lastname']     
+
       # Where did the ghost come from?
       fromi = self.GHOST['i'] + self.DIR_OFFSETS[self.GHOST_LAST_DIR]['i']
       fromj = self.GHOST['j'] + self.DIR_OFFSETS[self.GHOST_LAST_DIR]['j']
@@ -565,6 +580,11 @@ class Journey:
          # Otherwise, it's a new president
          else:
             self.TEMP += "This time it looked like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
+
+         # If this ghost has quotes, pick one and say it
+         if fullname in self.JSON['quotes'].keys():
+            self.TEMP += 'It said, "' + random.choice(self.JSON['quotes'][fullname]) + '," to me. '
+
       else:
          self.TEMP += "A scary " + random.choice(self.GHOSTS) + " appeared from the " 
          self.TEMP += self.DIR_STRINGS[self.OPPOSITE[self.GHOST_LAST_DIR]][0] + "! "
@@ -575,6 +595,9 @@ class Journey:
             self.TEMP += "It came right through the wall! "
 
          self.TEMP += "It looked a little like " + potus['person']['firstname'] + " " + potus['person']['lastname'] + ". "
+
+         if fullname in self.JSON['quotes'].keys():
+            self.TEMP += 'It said, "' + random.choice(self.JSON['quotes'][fullname]) + '," to me. '
 
       # Update that we saw the ghost and remove it from this floor
       self.GHOST_LAST = potus
