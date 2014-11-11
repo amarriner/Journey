@@ -27,7 +27,7 @@ just incorporated that into the novel itself.
  * [pattern.en](http://www.clips.ua.ac.be/pages/pattern-en)
  * [ConceptNet](http://conceptnet5.media.mit.edu/)
  * List of Presidents from [govtrack.us](https://www.govtrack.us/developers/api)
- * [US Presidents quotes from here](http://www.lifehack.org/articles/productivity/55-inspiring-quotes-from-presidents-that-will-change-your-life.html)
+ * US Presidents quotes from [here](http://www.lifehack.org/articles/productivity/55-inspiring-quotes-from-presidents-that-will-change-your-life.html)
 
 ## Sample PDF Output
 
