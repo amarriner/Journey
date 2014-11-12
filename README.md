@@ -37,4 +37,4 @@ In order to produce a more finished version, I saved a run of the novel's HTML o
 
 
 ## Sample Map Image
-![Sample Map Image](https://raw.githubusercontent.com/amarriner/Journey/master/html/maps/1.png)
+![Sample Map Image](https://raw.githubusercontent.com/amarriner/Journey/gh-pages/html/maps/1.png)
