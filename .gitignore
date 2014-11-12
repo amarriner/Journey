@@ -1,0 +1,5 @@
+keys*
+__pycache__
+*.log*
+corpora
+gdmodule
