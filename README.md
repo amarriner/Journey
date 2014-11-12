@@ -20,6 +20,8 @@ It now produces an HTML version of the novel with corresponding map images of ea
 wasn't actually producing good maps so as I was debugging and fixing that it made sense to be able to see what was going on. So I 
 just incorporated that into the novel itself.
 
+[View on GitHub Pages](http://amarriner.github.io/Journey/)
+
 [My NaNoGenMo-2014 Issue](https://github.com/dariusk/NaNoGenMo-2014/issues/22)
 
 **Dependencies and Tools**
@@ -37,4 +39,4 @@ In order to produce a more finished version, I saved a run of the novel's HTML o
 
 
 ## Sample Map Image
-![Sample Map Image](https://raw.githubusercontent.com/amarriner/Journey/master/html/maps/1.png)
+![Sample Map Image](https://raw.githubusercontent.com/amarriner/Journey/gh-pages/html/maps/1.png)
