@@ -1,5 +1,15 @@
+<<<<<<< HEAD
 keys*
 __pycache__
 *.log*
 corpora
 gdmodule
+=======
+__pycache__
+*.pyc
+keys.*
+*.log*
+corpora
+gdmodule
+html
+>>>>>>> 79d81f2a24603c4b70f2d79dfa91bf5167d367e7
