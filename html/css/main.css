@@ -1,0 +1,84 @@
+div {
+   padding: 10px;
+}
+
+@media print {
+   hr {
+      page-break-after: always;
+   }
+}
+
+body {
+   font-family: Arial, Verdana, Helvetica;
+   font-size: 12px;
+   margin: 0;
+   padding: 0;
+}
+
+#header {
+   height: 35px;
+   margin: 0;
+   padding: 0;
+}
+
+#header div {
+   background-color: #88b;
+   float: left;
+   height: 35px;
+   padding: 0;
+   width: 50%;
+}
+
+#credits {
+   background-color: #88b;
+   bottom: 0px;
+   margin: 0;
+   padding: 0;
+   text-align: right;
+}
+
+#credits span {
+   color: white;
+   display: block;
+   font-size: 90%;
+   margin: 0;
+   padding: 2px;
+}
+
+a, a:hover, a:visited, a:active {
+   color: #ff5;
+}
+
+h1 {
+   background-color: #88b;
+   color: #fff;
+   float: left;
+   height: 100%;
+   margin: 0;
+   padding: 0;
+   text-indent: 5px;
+   width: 50%;
+}
+
+h1 span {
+   color: #fff;
+   display: block;
+   font-size: 50%;
+   padding: 0;
+}
+
+h2 {
+   clear: both;
+   padding: 10px;
+}
+
+div.map {
+   float: right;
+}
+
+hr {
+   border: 2px dashed #88b; 
+   clear: both;
+   height: 0;
+   margin-top: 15px;
+}
