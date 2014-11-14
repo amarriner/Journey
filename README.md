@@ -35,7 +35,7 @@ just incorporated that into the novel itself.
 
 In order to produce a more finished version, I saved a run of the novel's HTML output to PDF.
 
-[Sample PDF](https://www.dropbox.com/s/p4y65fflj5mcpxn/Flora%20and%20Fauna.pdf?dl=0)
+[Sample PDF](http://amarriner.github.io/Journey/Flora%20and%20Fauna.pdf)
 
 
 ## Sample Map Image
