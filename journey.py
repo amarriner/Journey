@@ -12,7 +12,6 @@ import re
 import requests
 import sys
 
-PRESIDENTS_URL = "https://www.govtrack.us/api/v2/role?role_type=president"
 CONCEPTNET_URL = "http://conceptnet5.media.mit.edu/data/5.2/c/en/"
 
 class Journey:
@@ -98,23 +97,13 @@ class Journey:
          self.ANIMAL_CONCEPTS = json.loads(f.read())
          f.close()
 
-      if os.path.exists('json/presidents.json'):
-         f = open('json/presidents.json')
-         self.JSON['presidents'] = json.loads(f.read())
-         f.close()
-      else:
-         r = requests.get(PRESIDENTS_URL)
-         self.JSON['presidents'] = r.json()
+      f = open('corpora/data/humans/us_presidents.json')
+      self.JSON['presidents'] = json.loads(f.read())
+      f.close()
 
-         f = open('json/presidents.json', 'w')
-         f.write(json.dumps(r.json()) + "\n")
-         f.close()
-
-      # Quotes from http://www.lifehack.org/articles/productivity/55-inspiring-quotes-from-presidents-that-will-change-your-life.html
-      if os.path.exists('json/quotes.json'):
-         f = open('json/quotes.json')
-         self.JSON['quotes'] = json.loads(f.read())
-         f.close()
+      f = open('corpora/data/words/us_president_quotes.json')
+      self.JSON['quotes'] = json.loads(f.read())
+      f.close()
 
    # -------------------------------------------------------------------------------------------------------------
    def init_maze(self):

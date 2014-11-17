@@ -4,4 +4,4 @@ keys.*
 *.log*
 corpora
 gdmodule
-html
+html/
